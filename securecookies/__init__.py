@@ -1,2 +1,1 @@
-from .errors import BadArgumentError  # noqa
-from .middleware import SecureCookiesMiddleware  # noqa
+from .middleware import BadArgumentError, SecureCookiesMiddleware  # noqa

@@ -7,7 +7,9 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
 
-from .errors import BadArgumentError
+
+class BadArgumentError(Exception):
+    pass
 
 
 class SecureCookiesMiddleware(BaseHTTPMiddleware):
@@ -89,7 +91,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
             headers.remove(raw_cookies[0])
             cookies: SimpleCookie = SimpleCookie(raw_cookies[0][1].decode())
 
-            for cookie, morsel in cookies.items():
+            for cookie, morsel in list(cookies.items()):
                 # if the cookie is included or not excluded
                 if (
                     (not self.included_cookies and not self.excluded_cookies)
@@ -126,8 +128,8 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
             # if the cookie is included or not excluded
             if (
                 (not self.included_cookies and not self.excluded_cookies)
-                or (self.included_cookies and cookie in self.included_cookies)
-                or (self.excluded_cookies and cookie not in self.excluded_cookies)
+                or (self.included_cookies and key in self.included_cookies)
+                or (self.excluded_cookies and key not in self.excluded_cookies)
             ):
                 # create a new encrypted cookie with the desired attributes
                 response.set_cookie(
