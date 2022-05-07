@@ -9,7 +9,10 @@ from starlette.types import ASGIApp
 
 
 class BadArgumentError(Exception):
-    pass
+    """
+    Generic error arguments with invalid values, or combinations of conflicting
+    arguments.
+    """
 
 
 class SecureCookiesMiddleware(BaseHTTPMiddleware):
