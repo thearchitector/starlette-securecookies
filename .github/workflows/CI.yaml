@@ -1,0 +1,25 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check formatting
+      - uses: psf/black@stable
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    name: tests
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - uses: Gr1N/setup-poetry@v7
+      - name: Run tests
+        run: poetry run pytest tests
