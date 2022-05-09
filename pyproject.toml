@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "starlette-securecookies"
-version = "1.0.0.post1"
+version = "1.0.1"
 description = "Secure cookie middleware for Starlette applications."
 authors = ["Elias Gabriel <me@eliasfgabriel.com>"]
 license = "BSD-3-Clause"
@@ -10,12 +10,12 @@ keywords = ["starlette", "fastapi", "middleware", "encryption", "cookies"]
 readme = "README.md"
 
 packages = [{ include = "securecookies" }]
-include = ["securecookies/py.typed"]
+include = ["CHANGELOG.md", "securecookies/py.typed"]
 exclude = ["securecookies/toplevel.md"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-starlette = "^0.20.0"
+starlette = ">=0.6.1"
 cryptograpy = "^0.0.0"
 
 [tool.poetry.dev-dependencies]
