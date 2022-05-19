@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "starlette-securecookies"
-version = "1.0.1"
+version = "1.0.2"
 description = "Secure cookie middleware for Starlette applications."
 authors = ["Elias Gabriel <me@eliasfgabriel.com>"]
 license = "BSD-3-Clause"

@@ -1,5 +1,5 @@
 from http.cookies import SimpleCookie
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -41,7 +41,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         cookie_domain: Optional[str] = None,
         cookie_secure: Optional[bool] = None,
         cookie_httponly: Optional[bool] = None,
-        cookie_samesite: Optional[Literal["lax", "strict", "none"]] = None,
+        cookie_samesite: Optional[str] = None,
         excluded_cookies: Optional[List[str]] = None,
         included_cookies: Optional[List[str]] = None,
     ) -> None:

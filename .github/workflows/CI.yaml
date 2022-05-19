@@ -5,22 +5,43 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     steps:
       - uses: actions/checkout@v2
       - name: Check formatting
         uses: psf/black@stable
+      - name: Check typing
+        uses: jpetrucciani/mypy-check@master
+        with:
+          path: "api/gianturl"
+          mypy_flags: "--follow-imports=silent --ignore-missing-imports --non-interactive --install-types --pretty --check"
 
   test:
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-    name: tests
+      matrix:
+        python-version: [3.7, 3.8, 3.9, "3.10"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      POETRY_CACHE_DIR: ~/.cache/poetry
+      POETRY_VIRTUALENVS_IN_PROJECT: true
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - uses: Gr1N/setup-poetry@v7
-      - run: poetry install
+          python-version: ${{ matrix.python-version }}
+      - uses: abatilo/actions-poetry@v2.1.4
+      - uses: actions/cache@v2
+        id: cache
+        with:
+          path: |
+            ${{ env.POETRY_CACHE_DIR }}
+            .venv
+          key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('api/poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: poetry install -n
       - name: Run tests
-        run: poetry run pytest tests
+        run: poetry run pytest -svv tests
