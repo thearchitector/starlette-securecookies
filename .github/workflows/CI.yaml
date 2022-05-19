@@ -14,7 +14,7 @@ jobs:
       - name: Check typing
         uses: jpetrucciani/mypy-check@master
         with:
-          path: "api/gianturl"
+          path: "securecookies"
           mypy_flags: "--follow-imports=silent --ignore-missing-imports --non-interactive --install-types --pretty --check"
 
   test:
