@@ -7,6 +7,8 @@
 
 Customizable middleware for adding automatic cookie encryption and decryption to Starlette applications.
 
+Tested support on Python 3.7, 3.8, 3.9, and 3.10 on macOS, Windows, and Linux.
+
 ## How it works?
 
 ```mermaid
