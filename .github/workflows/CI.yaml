@@ -39,7 +39,7 @@ jobs:
           path: |
             ${{ env.POETRY_CACHE_DIR }}
             .venv
-          key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('api/poetry.lock') }}
+          key: ${{ matrix.os }}-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: poetry install -n
