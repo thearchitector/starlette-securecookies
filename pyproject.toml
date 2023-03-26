@@ -22,7 +22,6 @@ repository = "https://github.com/thearchitector/starlette-securecookies"
 [tool.pdm]
 [tool.pdm.build]
 includes = ["CHANGELOG.md", "securecookies/"]
-excludes = ["securecookies/toplevel.md"]
 
 [tool.pdm.dev-dependencies]
 dev = [
@@ -31,6 +30,9 @@ dev = [
     "requests~=2.28.2",
     "httpx>=0.23.3",
 ]
+
+[tool.pdm.scripts]
+docs = "pdoc -t docs_templates -o docs --no-search securecookies"
 
 [tool.pytest.ini_options]
 addopts = "-svv"
