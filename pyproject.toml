@@ -18,11 +18,9 @@ dependencies = [
 homepage = "https://example.com"
 documentation = "https://securecookies.thearchitector.dev"
 repository = "https://github.com/thearchitector/starlette-securecookies"
+changelog = "https://github.com/thearchitector/starlette-securecookies/blob/main/CHANGELOG.md"
 
 [tool.pdm]
-[tool.pdm.build]
-includes = ["CHANGELOG.md", "securecookies/"]
-
 [tool.pdm.dev-dependencies]
 dev = [
     "pytest~=7.2.2",
@@ -32,7 +30,7 @@ dev = [
 ]
 
 [tool.pdm.scripts]
-docs = "pdoc -t docs_templates -o docs --no-search securecookies"
+docs = "pdoc -t docs_templates -o docs --no-search src/securecookies"
 
 [tool.pytest.ini_options]
 addopts = "-svv"
