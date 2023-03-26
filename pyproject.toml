@@ -21,6 +21,9 @@ repository = "https://github.com/thearchitector/starlette-securecookies"
 changelog = "https://github.com/thearchitector/starlette-securecookies/blob/main/CHANGELOG.md"
 
 [tool.pdm]
+[tool.pdm.build]
+includes = ["CHANGELOG.md", "securecookies/"]
+
 [tool.pdm.dev-dependencies]
 dev = [
     "pytest~=7.2.2",
@@ -30,7 +33,7 @@ dev = [
 ]
 
 [tool.pdm.scripts]
-docs = "pdoc -t docs_templates -o docs --no-search src/securecookies"
+docs = "pdoc -t docs_templates -o docs --no-search securecookies"
 
 [tool.pytest.ini_options]
 addopts = "-svv"
@@ -39,3 +42,7 @@ testpaths = [ "tests" ]
 [tool.mypy]
 python_version = "3.7"
 strict = true
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
