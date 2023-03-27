@@ -1,11 +1,12 @@
 import pytest
 from cryptography.fernet import Fernet
-from securecookies import SecureCookiesMiddleware
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 from starlette.testclient import TestClient
+
+from securecookies import SecureCookiesMiddleware
 
 
 async def _get(request):
@@ -28,9 +29,11 @@ async def _validate(request):
     assert request.cookies.get("topsecret") == "thisisasecretcookie"
 
     response = PlainTextResponse("Hello world!")
-    response.set_cookie(
-        "topsecret", request.cookies.get("othercookie", "iateyoursecret")
-    )
+
+    response.set_cookie("topsecret", "iateyoursecret")
+    if request.cookies.get("othercookie"):
+        response.set_cookie("othercookie", request.cookies.get("othercookie"))
+
     return response
 
 
@@ -54,7 +57,7 @@ def mock_cookies(fernet):
 
 @pytest.fixture(scope="session")
 def client_factory(secret):
-    def _func(**kwargs):
+    def _func(cookies=None, **kwargs):
         return TestClient(
             Starlette(
                 debug=True,
@@ -66,12 +69,8 @@ def client_factory(secret):
                 middleware=[
                     Middleware(SecureCookiesMiddleware, secrets=[secret], **kwargs)
                 ],
-            )
+            ),
+            cookies=cookies,
         )
 
     yield _func
-
-
-@pytest.fixture
-def client(secret, client_factory):
-    yield client_factory()

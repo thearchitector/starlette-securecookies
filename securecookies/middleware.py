@@ -1,5 +1,5 @@
 from http.cookies import SimpleCookie
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -92,7 +92,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         if len(raw_cookies):
             # if encrypted cookies are present, remove and parse them
             headers.remove(raw_cookies[0])
-            cookies: SimpleCookie = SimpleCookie(raw_cookies[0][1].decode())
+            cookies: SimpleCookie[Any] = SimpleCookie(raw_cookies[0][1].decode())
 
             for cookie, morsel in list(cookies.items()):
                 # if the cookie is included or not excluded
@@ -125,7 +125,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         # for every cookie in the response
         for raw_cookie in response.headers.getlist("set-cookie"):
             # decode it
-            ncookie: SimpleCookie = SimpleCookie(raw_cookie)
+            ncookie: SimpleCookie[Any] = SimpleCookie(raw_cookie)
             key = [*ncookie.keys()][0]
 
             # if the cookie is included or not excluded
@@ -142,7 +142,8 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
                     domain=self.cookie_domain or ncookie[key]["domain"],
                     secure=self.cookie_secure or ncookie[key]["secure"],
                     httponly=self.cookie_httponly or ncookie[key]["httponly"],
-                    samesite=self.cookie_samesite or ncookie[key]["samesite"],
+                    samesite=self.cookie_samesite
+                    or ncookie[key]["samesite"],  # type:ignore [arg-type]
                 )
 
         return response

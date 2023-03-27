@@ -1,4 +1,4 @@
-""".. include:: ./toplevel.md"""
+""".. include:: ../../README.md"""
 
 from .middleware import BadArgumentError, SecureCookiesMiddleware
 

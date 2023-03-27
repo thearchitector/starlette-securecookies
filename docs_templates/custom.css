@@ -1,0 +1,10 @@
+.docstring > pre {
+  all: unset;
+}
+.docstring > pre > code {
+  all: unset;
+  visibility: hidden;
+}
+.docstring > pre > code[data-processed="true"] {
+  visibility: visible;
+}
