@@ -1,7 +1,7 @@
 import pytest
 from cryptography.fernet import Fernet
 from starlette.applications import Starlette
-from starlette.middleware import sessions
+from starlette.middleware import Middleware, sessions
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 from starlette.testclient import TestClient
@@ -72,23 +72,26 @@ def mock_cookies(fernet):
 @pytest.fixture(scope="session")
 def client_factory(secret):
     def _func(cookies=None, **kwargs):
-        app = Starlette(
-            debug=True,
-            routes=[
-                Route("/get", _get, methods=["GET"]),
-                Route("/getm", _get_multi, methods=["GET"]),
-                Route("/validate", _validate, methods=["GET"]),
-                # third party
-                Route("/session", _session, methods=["GET"]),
-                Route("/session_val", _validate_session, methods=["GET"]),
-            ],
-        )
-
-        app.add_middleware(sessions.SessionMiddleware, secret_key="verysecretsecret")
-        app.add_middleware(SecureCookiesMiddleware, secrets=[secret], **kwargs)
-
         return TestClient(
-            app,
+            Starlette(
+                debug=True,
+                routes=[
+                    Route("/get", _get, methods=["GET"]),
+                    Route("/getm", _get_multi, methods=["GET"]),
+                    Route("/validate", _validate, methods=["GET"]),
+                    # third party
+                    Route("/session", _session, methods=["GET"]),
+                    Route("/session_val", _validate_session, methods=["GET"]),
+                ],
+                middleware=[
+                    # secure cookies must be first in the list so it can decrypt first
+                    # and encrypt last
+                    Middleware(SecureCookiesMiddleware, secrets=[secret], **kwargs),
+                    Middleware(
+                        sessions.SessionMiddleware, secret_key="verysecretsecret"
+                    ),
+                ],
+            ),
             cookies=cookies,
         )
 

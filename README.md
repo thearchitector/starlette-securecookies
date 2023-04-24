@@ -56,12 +56,15 @@ from securecookies import SecureCookiesMiddleware
 
 middleware = [
     Middleware(
-        SecureCookiesMiddleware, secrets=["SUPER SECRET SECRET"]
+        SecureCookiesMiddleware, secrets=["SUPER SECRET SECRET"],
+        # your other middlewares
     )
 ]
 
 app = Starlette(routes=..., middleware=middleware)
 ```
+
+Note that if you're using another middleware that injects cookies into the response (such as SessionMiddleware), you have to make sure `SecureCookiesMiddleware` executes _after_ it so the cookie is present at encryption-time. Counter intuitively, in practice this means ensuring `SecureCookiesMiddleware` is _first_ in the list of middlewares.
 
 ## License
 
