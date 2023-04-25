@@ -30,6 +30,7 @@ dev = [
     "pdoc~=13.0.1",
     "requests~=2.28.2",
     "httpx>=0.23.3",
+    "itsdangerous>=2.1.2",
 ]
 
 [tool.pdm.scripts]

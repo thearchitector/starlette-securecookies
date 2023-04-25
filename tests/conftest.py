@@ -1,7 +1,7 @@
 import pytest
 from cryptography.fernet import Fernet
 from starlette.applications import Starlette
-from starlette.middleware import Middleware
+from starlette.middleware import Middleware, sessions
 from starlette.responses import PlainTextResponse
 from starlette.routing import Route
 from starlette.testclient import TestClient
@@ -37,6 +37,20 @@ async def _validate(request):
     return response
 
 
+async def _session(request):
+    # set a session variable, expect SessionMiddleware to encode & sign it
+    # then SecureCookies to encrypt it
+    request.session["banana"] = "hello"
+    return PlainTextResponse("Session set")
+
+
+async def _validate_session(request):
+    # read a session variable, expect SecureCookies to decrypt it
+    # then SessionMiddleware to unsign & decode it
+    assert request.session["banana"] == "hello"
+    return PlainTextResponse("Session get")
+
+
 @pytest.fixture(scope="session")
 def secret():
     yield Fernet.generate_key()
@@ -65,9 +79,17 @@ def client_factory(secret):
                     Route("/get", _get, methods=["GET"]),
                     Route("/getm", _get_multi, methods=["GET"]),
                     Route("/validate", _validate, methods=["GET"]),
+                    # third party
+                    Route("/session", _session, methods=["GET"]),
+                    Route("/session_val", _validate_session, methods=["GET"]),
                 ],
                 middleware=[
-                    Middleware(SecureCookiesMiddleware, secrets=[secret], **kwargs)
+                    # secure cookies must be first in the list so it can decrypt first
+                    # and encrypt last
+                    Middleware(SecureCookiesMiddleware, secrets=[secret], **kwargs),
+                    Middleware(
+                        sessions.SessionMiddleware, secret_key="verysecretsecret"
+                    ),
                 ],
             ),
             cookies=cookies,
