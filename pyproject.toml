@@ -15,6 +15,11 @@ dependencies = [
     "typing-extensions; python_version < '3.8'",
 ]
 
+[project.optional-dependencies]
+csrf = [
+    "starlette-csrf>=1.4.2",
+]
+
 [project.urls]
 homepage = "https://securecookies.thearchitector.dev"
 documentation = "https://securecookies.thearchitector.dev"
@@ -34,7 +39,7 @@ dev = [
 ]
 
 [tool.pdm.scripts]
-docs = "pdoc -t docs_templates -o docs --no-search securecookies"
+docs = "pdoc -o docs --no-search --mermaid securecookies"
 
 [tool.pytest.ini_options]
 addopts = "-svv"
