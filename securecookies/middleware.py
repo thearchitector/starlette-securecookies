@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
+from typing_extensions import Literal
 
 
 class BadArgumentError(Exception):
@@ -20,7 +21,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
     Provides automatic secure cookie support through symmetric Fernet encryption. As per
     the `cryptography` docs, security is achieved through:
 
-    - 128-bit key AES in CBC mode using PKCS7 padding for encryption
+    - 128-bit key AES in CBC mode using PKCS7 padding for encryption.
     - HMAC using SHA256 for authentication.
     """
 
@@ -41,7 +42,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         cookie_domain: Optional[str] = None,
         cookie_secure: Optional[bool] = None,
         cookie_httponly: Optional[bool] = None,
-        cookie_samesite: Optional[str] = None,
+        cookie_samesite: Optional[Literal["strict", "lax", "none"]] = None,
         excluded_cookies: Optional[List[str]] = None,
         included_cookies: Optional[List[str]] = None,
     ) -> None:
@@ -74,7 +75,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         if excluded_cookies and included_cookies:
             raise BadArgumentError(
                 "It doesn't make sense to specify both excluded and included cookies."
-                " Supply with `excluded_cookies` or `included_cookies` to restrict"
+                " Supply either `excluded_cookies` or `included_cookies` to restrict"
                 " which cookies should be secure."
             )
 
@@ -83,18 +84,31 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
                 "SameSite attribute must be either 'strict', 'lax' or 'none'"
             )
 
+    def set_header(self, request: Request, header: str, value: str) -> None:
+        """
+        Adds the given Header to the available Request headers. If the Header already
+        exists, its value is overwritten.
+        """
+        hkey = header.encode("latin-1")
+        request.scope["headers"] = [
+            *(h for h in request.scope["headers"] if h[0] != hkey),
+            (hkey, value.encode("latin-1")),
+        ]
+
+    def decrypt(self, value: str) -> str:
+        """Decrypt the given value using any of the configured secrets."""
+        return self.mfernet.decrypt(value.encode()).decode()
+
+    def encrypt(self, value: str) -> str:
+        """Encrypt the given value using the first configured secret."""
+        return self.mfernet.encrypt(value.encode()).decode()
+
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        # request cookies are only passed along and mutable within the asgi scope
-        headers = request.scope["headers"]
-        raw_cookies = [h for h in headers if h[0] == b"cookie"]
-        if len(raw_cookies):
-            # if encrypted cookies are present, remove and parse them
-            headers.remove(raw_cookies[0])
-            cookies: SimpleCookie[Any] = SimpleCookie(raw_cookies[0][1].decode())
-
-            for cookie, morsel in list(cookies.items()):
+        if len(request.cookies):
+            cookies: SimpleCookie[Any] = SimpleCookie()
+            for cookie, value in request.cookies.items():
                 # if the cookie is included or not excluded
                 if (
                     (not self.included_cookies and not self.excluded_cookies)
@@ -102,30 +116,27 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
                     or (self.excluded_cookies and cookie not in self.excluded_cookies)
                 ):
                     try:
-                        # try to decrypt the token. if you can, then it's already
-                        # encrypted and can be passed along
-                        cookies[cookie] = self.mfernet.decrypt(
-                            morsel.value.encode()
-                        ).decode()
+                        # try to decrypt the cookie and pass it along
+                        cookies[cookie] = self.decrypt(value)
                     except InvalidToken:
-                        # delete invalid or unencrypted cookies if enabled
-                        if self.discard_invalid:
-                            del cookies[cookie]
+                        # delete invalid or unencrypted cookies unless disabled
+                        if not self.discard_invalid:
+                            cookies[cookie] = value
 
-            # serialize and append the decrypted cookies to the asgi scope headers
-            new_cookie = (
-                b"cookie",
-                cookies.output(header="", sep=";").strip().encode(),
+            # serialize and set the decrypted cookies to the asgi scope headers
+            # we have to modify the scope directly because request objects are not
+            # passed between ASGI applications / middleware.
+            self.set_header(
+                request, "cookie", cookies.output(header="", sep=";").strip()
             )
-            headers.append(new_cookie)
 
         # propagate the modified request
         response: Response = await call_next(request)
 
         # for every cookie in the response
-        for raw_cookie in response.headers.getlist("set-cookie"):
+        for cookie in response.headers.getlist("set-cookie"):
             # decode it
-            ncookie: SimpleCookie[Any] = SimpleCookie(raw_cookie)
+            ncookie: SimpleCookie[Any] = SimpleCookie(cookie)
             key = [*ncookie.keys()][0]
 
             # if the cookie is included or not excluded
@@ -137,13 +148,12 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
                 # create a new encrypted cookie with the desired attributes
                 response.set_cookie(
                     key,
-                    value=self.mfernet.encrypt(ncookie[key].value.encode()).decode(),
+                    value=self.encrypt(ncookie[key].value),
                     path=self.cookie_path or ncookie[key]["path"],
                     domain=self.cookie_domain or ncookie[key]["domain"],
                     secure=self.cookie_secure or ncookie[key]["secure"],
                     httponly=self.cookie_httponly or ncookie[key]["httponly"],
-                    samesite=self.cookie_samesite
-                    or ncookie[key]["samesite"],  # type:ignore [arg-type]
+                    samesite=self.cookie_samesite or ncookie[key]["samesite"],
                 )
 
         return response
