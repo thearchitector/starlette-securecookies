@@ -1,3 +1,4 @@
+import sys
 from http.cookies import SimpleCookie
 from typing import Any, List, Optional
 
@@ -6,7 +7,11 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 from starlette.responses import Response
 from starlette.types import ASGIApp
-from typing_extensions import Literal
+
+if sys.version_info >= (3, 8):  # pragma: no cover
+    from typing import Literal
+else:  # pragma: no cover
+    from typing_extensions import Literal
 
 
 class BadArgumentError(Exception):

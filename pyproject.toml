@@ -12,7 +12,7 @@ requires-python = "~=3.7"
 dependencies = [
     "starlette>=0.6.1",
     "cryptography>=2.2",
-    "typing-extensions; python_version < '3.8'",
+    "typing_extensions; python_version < '3.8'",
 ]
 
 [project.optional-dependencies]
