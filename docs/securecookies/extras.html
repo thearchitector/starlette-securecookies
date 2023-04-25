@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content="pdoc 13.0.1" />
+    <meta name="generator" content="pdoc 13.1.1" />
     <title>securecookies.extras API documentation</title>
 
     <style>
@@ -1163,17 +1163,24 @@
     </style>
     <style>
       /*! custom.css */
-      .docstring > pre {
-        all: unset;
-      }
-      .docstring > pre > code {
-        all: unset;
-        visibility: hidden;
-      }
-      .docstring > pre > code[data-processed="true"] {
-        visibility: visible;
+    </style>
+    <style>
+      .pdoc .mermaid-pre {
+        border: none;
+        background: none;
       }
     </style>
+    <script type="module" defer>
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+      /* Re-invoke Mermaid when DOM content changes, for example during search. */
+      document.addEventListener("DOMContentLoaded", () => {
+        new MutationObserver(() => mermaid.run()).observe(
+          document.querySelector("main.pdoc").parentNode,
+          { childList: true }
+        );
+      });
+    </script>
   </head>
   <body>
     <nav class="pdoc">
@@ -1217,12 +1224,7 @@
 
         <h2>Contents</h2>
         <ul>
-          <li>
-            <a href="#securecookiesextras">securecookies.extras</a>
-            <ul>
-              <li><a href="#securecsrfmiddleware">SecureCSRFMiddleware</a></li>
-            </ul>
-          </li>
+          <li><a href="#securecookiesextras">securecookies.extras</a></li>
         </ul>
 
         <a
@@ -1241,49 +1243,61 @@
     </nav>
     <main class="pdoc">
       <section class="module-info">
+        <h1 class="modulename">
+          <a href="./../securecookies.html">securecookies</a><wbr />.extras
+        </h1>
+
         <div class="docstring">
           <h1 id="securecookiesextras"><a href="">securecookies.extras</a></h1>
 
           <p>
-            starlette-securecookies also ships with some common middlewares and
+            starlette-securecookies also ships with some common middleware and
             tools modified and extended to work with secure cookies.
           </p>
 
-          <h2 id="securecsrfmiddleware">SecureCSRFMiddleware</h2>
-
-          <p>
-            Adds compatibility to the CSRFMiddleware provided by the
-            <a
-              href="https://github.com/frankie567/starlette-csrf#starlette-csrf-middleware"
-              >starlette_csrf</a
-            >
-            package.
-          </p>
-
-          <div class="pdoc-code codehilite">
-            <pre><span></span><code><span class="kn">from</span> <span class="nn">starlette.applications</span> <span class="kn">import</span> <span class="n">Starlette</span>
-<span class="kn">from</span> <span class="nn">starlette.middleware</span> <span class="kn">import</span> <span class="n">Middleware</span>
-
-<span class="kn">from</span> <span class="nn">securecookies</span> <span class="kn">import</span> <span class="n">SecureCookiesMiddleware</span>
-<span class="kn">from</span> <span class="nn">securecookies.extras.csrf</span> <span class="kn">import</span> <span class="n">SecureCSRFMiddleware</span>
-
-<span class="n">middleware</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">Middleware</span><span class="p">(</span>
-        <span class="n">SecureCookiesMiddleware</span><span class="p">,</span> <span class="n">secrets</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;SUPER SECRET SECRET&quot;</span><span class="p">]</span>
-    <span class="p">)</span>
-<span class="p">]</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">Starlette</span><span class="p">(</span><span class="n">routes</span><span class="o">=...</span><span class="p">,</span> <span class="n">middleware</span><span class="o">=</span><span class="n">middleware</span><span class="p">)</span>
-</code></pre>
-          </div>
+          <ul>
+            <li>
+              <strong><code>csrf.SecureCSRFMiddleware</code></strong
+              >: Adds compatibility to the CSRF middleware provided by
+              <a href="https://github.com/frankie567/starlette-csrf"
+                >starlette_csrf</a
+              >. To use it, simply add it to your list of middleware (keep in
+              mind the ordering). If you don't want to specify
+              <code>starlette_csrf</code> as a direct dependency, you can also
+              install it through the <code>[csrf]</code> package extra.
+            </li>
+          </ul>
         </div>
 
-        <script type="module">
-          import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
-          const diagram = document.getElementsByTagName("code")[0];
-          mermaid.initialize({ startOnLoad: false, theme: "forest" });
-          //await mermaid.run({ nodes: [diagram] });
-        </script>
+        <input
+          id="mod-extras-view-source"
+          class="view-source-toggle-state"
+          type="checkbox"
+          aria-hidden="true"
+          tabindex="-1"
+        />
+
+        <label class="view-source-button" for="mod-extras-view-source"
+          ><span>View Source</span></label
+        >
+
+        <div class="pdoc-code codehilite">
+          <pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos"> 1</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos"> 2</span></a><span class="sd"># securecookies.extras</span>
+</span><span id="L-3"><a href="#L-3"><span class="linenos"> 3</span></a>
+</span><span id="L-4"><a href="#L-4"><span class="linenos"> 4</span></a><span class="sd">starlette-securecookies also ships with some common middleware and tools modified and</span>
+</span><span id="L-5"><a href="#L-5"><span class="linenos"> 5</span></a><span class="sd">extended to work with secure cookies.</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos"> 6</span></a>
+</span><span id="L-7"><a href="#L-7"><span class="linenos"> 7</span></a><span class="sd">- **`csrf.SecureCSRFMiddleware`**: Adds compatibility to the CSRF middleware provided</span>
+</span><span id="L-8"><a href="#L-8"><span class="linenos"> 8</span></a><span class="sd">by [starlette_csrf](https://github.com/frankie567/starlette-csrf). To use it, simply</span>
+</span><span id="L-9"><a href="#L-9"><span class="linenos"> 9</span></a><span class="sd">add it to your list of middleware (keep in mind the ordering). If you don&#39;t want to</span>
+</span><span id="L-10"><a href="#L-10"><span class="linenos">10</span></a><span class="sd">specify `starlette_csrf` as a direct dependency, you can also install it through the</span>
+</span><span id="L-11"><a href="#L-11"><span class="linenos">11</span></a><span class="sd">`[csrf]` package extra.</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
+</span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[]</span>
+</span></pre>
+        </div>
       </section>
     </main>
   </body>

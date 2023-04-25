@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="generator" content="pdoc 13.0.1" />
+    <meta name="generator" content="pdoc 13.1.1" />
     <title>securecookies API documentation</title>
 
     <style>
@@ -1163,17 +1163,24 @@
     </style>
     <style>
       /*! custom.css */
-      .docstring > pre {
-        all: unset;
-      }
-      .docstring > pre > code {
-        all: unset;
-        visibility: hidden;
-      }
-      .docstring > pre > code[data-processed="true"] {
-        visibility: visible;
+    </style>
+    <style>
+      .pdoc .mermaid-pre {
+        border: none;
+        background: none;
       }
     </style>
+    <script type="module" defer>
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+      /* Re-invoke Mermaid when DOM content changes, for example during search. */
+      document.addEventListener("DOMContentLoaded", () => {
+        new MutationObserver(() => mermaid.run()).observe(
+          document.querySelector("main.pdoc").parentNode,
+          { childList: true }
+        );
+      });
+    </script>
   </head>
   <body>
     <nav class="pdoc">
@@ -1327,12 +1334,14 @@
     </nav>
     <main class="pdoc">
       <section class="module-info">
+        <h1 class="modulename">securecookies</h1>
+
         <div class="docstring">
           <h1 id="starlette-securecookies">starlette-securecookies</h1>
 
           <p>
             <img
-              src="https://img.shields.io/github/actions/workflow/status/thearchitector/starlette-securecookies/CI.yaml?label=tests&amp;style=flat-square"
+              src="https://img.shields.io/github/actions/workflow/status/thearchitector/starlette-securecookies/CI.yaml?label=tests&style=flat-square"
               alt="GitHub Workflow Status"
             />
             <img
@@ -1363,12 +1372,13 @@
 
           <h2 id="how-it-works">How it works?</h2>
 
-          <pre><code>sequenceDiagram
-    Browser-&gt;&gt;+Middleware: Encrypted cookies
-    Middleware-&gt;&gt;+Application: Filtered / Decrypted cookies
+          <pre class="mermaid-pre"><div class="mermaid">sequenceDiagram
+    Browser-&gt;&gt;+Middleware: Encrypted 'Cookie' header
+    Middleware-&gt;&gt;+Application: Decrypted cookies
     Application-&gt;&gt;-Middleware: Plaintext cookies
-    Middleware-&gt;&gt;-Browser: Encrypted 'Set-Cookie' headers
-</code></pre>
+    Middleware-&gt;&gt;-Browser: Encrypted 'Set-Cookie' header
+    Note over Application: *The Application may be your service&lt;br /&gt;or any additional middleware.
+</div></pre>
 
           <p>For any incoming cookies:</p>
 
@@ -1406,10 +1416,16 @@
 
           <p>For any outgoing cookies:</p>
 
-          <ol>
+          <ol start="7">
             <li>
               Your application sets cookies with
               <code>response.set_cookie</code> as usual.
+            </li>
+            <li>
+              Other middleware run and add additional cookies, like
+              <a href="https://www.starlette.io/middleware/#sessionmiddleware"
+                >SessionMiddleware</a
+              >.
             </li>
             <li>
               All responses returned by your application are intercepted by
@@ -1428,12 +1444,13 @@
                 ><a href="#SecureCookiesMiddleware"
                   >SecureCookiesMiddleware</a
                 ></code
-              >.
+              >
+              if set.
             </li>
             <li>
               The cookies in the response are replaced by the re-encrypted
-              cookies, and the response is propagated to Starlette to return to
-              the client's browser.
+              cookies, and the response is eventually propagated to the client's
+              browser.
             </li>
           </ol>
 
@@ -1466,13 +1483,63 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
 
 <span class="n">middleware</span> <span class="o">=</span> <span class="p">[</span>
     <span class="n">Middleware</span><span class="p">(</span>
-        <span class="n">SecureCookiesMiddleware</span><span class="p">,</span> <span class="n">secrets</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;SUPER SECRET SECRET&quot;</span><span class="p">]</span>
+        <span class="n">SecureCookiesMiddleware</span><span class="p">,</span> <span class="n">secrets</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;SUPER SECRET SECRET&quot;</span><span class="p">],</span>
+        <span class="c1"># your other middleware</span>
     <span class="p">)</span>
 <span class="p">]</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">Starlette</span><span class="p">(</span><span class="n">routes</span><span class="o">=...</span><span class="p">,</span> <span class="n">middleware</span><span class="o">=</span><span class="n">middleware</span><span class="p">)</span>
 </code></pre>
           </div>
+
+          <p>
+            Note that if you're using another middleware that injects cookies
+            into the response (such as
+            <a href="https://www.starlette.io/middleware/#sessionmiddleware"
+              >SessionMiddleware</a
+            >), you have to make sure
+            <code
+              ><a href="#SecureCookiesMiddleware"
+                >SecureCookiesMiddleware</a
+              ></code
+            >
+            executes _after_ it so the cookie is present at encryption-time.
+            Counter intuitively, in practice this means ensuring
+            <code
+              ><a href="#SecureCookiesMiddleware"
+                >SecureCookiesMiddleware</a
+              ></code
+            >
+            is _first_ in the list of middleware.
+          </p>
+
+          <h3 id="extras">Extras</h3>
+
+          <p>
+            <code>starlette-securecookies</code> provides some extras that
+            introduce or patch secure cookie functionality into existing tools.
+            They all reside in the
+            <code
+              ><a href="securecookies/extras.html"
+                >securecookies.extras</a
+              ></code
+            >
+            module. Currently there is only one, but more are welcome by
+            recommendation or Pull Request!
+          </p>
+
+          <ul>
+            <li>
+              <strong><code>csrf.SecureCSRFMiddleware</code></strong
+              >: Adds compatibility to the CSRF middleware provided by
+              <a href="https://github.com/frankie567/starlette-csrf"
+                >starlette_csrf</a
+              >. To use it, simply add it to your list of middleware (keep in
+              mind the ordering). If you don't want to specify
+              <code>starlette_csrf</code> as a direct dependency, you can also
+              install it through the <code>[csrf]</code> package extra.
+            </li>
+          </ul>
 
           <h2 id="license">License</h2>
 
@@ -1489,12 +1556,28 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
           </p>
         </div>
 
-        <script type="module">
-          import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
-          const diagram = document.getElementsByTagName("code")[0];
-          mermaid.initialize({ startOnLoad: false, theme: "forest" });
-          //await mermaid.run({ nodes: [diagram] });
-        </script>
+        <input
+          id="mod-securecookies-view-source"
+          class="view-source-toggle-state"
+          type="checkbox"
+          aria-hidden="true"
+          tabindex="-1"
+        />
+
+        <label class="view-source-button" for="mod-securecookies-view-source"
+          ><span>View Source</span></label
+        >
+
+        <div class="pdoc-code codehilite">
+          <pre><span></span><span id="L-1"><a href="#L-1"><span class="linenos">1</span></a><span class="sd">&quot;&quot;&quot;.. include:: ../README.md&quot;&quot;&quot;</span>
+</span><span id="L-2"><a href="#L-2"><span class="linenos">2</span></a>
+</span><span id="L-3"><a href="#L-3"><span class="linenos">3</span></a><span class="kn">from</span> <span class="nn">securecookies</span> <span class="kn">import</span> <span class="n">extras</span>
+</span><span id="L-4"><a href="#L-4"><span class="linenos">4</span></a>
+</span><span id="L-5"><a href="#L-5"><span class="linenos">5</span></a><span class="kn">from</span> <span class="nn">.middleware</span> <span class="kn">import</span> <span class="n">BadArgumentError</span><span class="p">,</span> <span class="n">SecureCookiesMiddleware</span>
+</span><span id="L-6"><a href="#L-6"><span class="linenos">6</span></a>
+</span><span id="L-7"><a href="#L-7"><span class="linenos">7</span></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SecureCookiesMiddleware&quot;</span><span class="p">,</span> <span class="s2">&quot;BadArgumentError&quot;</span><span class="p">,</span> <span class="s2">&quot;extras&quot;</span><span class="p">]</span>
+</span></pre>
+        </div>
       </section>
       <section id="SecureCookiesMiddleware">
         <input
@@ -1524,7 +1607,7 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
 </span><span id="SecureCookiesMiddleware-22"><a href="#SecureCookiesMiddleware-22"><span class="linenos"> 22</span></a><span class="sd">    Provides automatic secure cookie support through symmetric Fernet encryption. As per</span>
 </span><span id="SecureCookiesMiddleware-23"><a href="#SecureCookiesMiddleware-23"><span class="linenos"> 23</span></a><span class="sd">    the `cryptography` docs, security is achieved through:</span>
 </span><span id="SecureCookiesMiddleware-24"><a href="#SecureCookiesMiddleware-24"><span class="linenos"> 24</span></a>
-</span><span id="SecureCookiesMiddleware-25"><a href="#SecureCookiesMiddleware-25"><span class="linenos"> 25</span></a><span class="sd">    - 128-bit key AES in CBC mode using PKCS7 padding for encryption</span>
+</span><span id="SecureCookiesMiddleware-25"><a href="#SecureCookiesMiddleware-25"><span class="linenos"> 25</span></a><span class="sd">    - 128-bit key AES in CBC mode using PKCS7 padding for encryption.</span>
 </span><span id="SecureCookiesMiddleware-26"><a href="#SecureCookiesMiddleware-26"><span class="linenos"> 26</span></a><span class="sd">    - HMAC using SHA256 for authentication.</span>
 </span><span id="SecureCookiesMiddleware-27"><a href="#SecureCookiesMiddleware-27"><span class="linenos"> 27</span></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="SecureCookiesMiddleware-28"><a href="#SecureCookiesMiddleware-28"><span class="linenos"> 28</span></a>
@@ -1628,7 +1711,7 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
 </span><span id="SecureCookiesMiddleware-126"><a href="#SecureCookiesMiddleware-126"><span class="linenos">126</span></a>
 </span><span id="SecureCookiesMiddleware-127"><a href="#SecureCookiesMiddleware-127"><span class="linenos">127</span></a>            <span class="c1"># serialize and set the decrypted cookies to the asgi scope headers</span>
 </span><span id="SecureCookiesMiddleware-128"><a href="#SecureCookiesMiddleware-128"><span class="linenos">128</span></a>            <span class="c1"># we have to modify the scope directly because request objects are not</span>
-</span><span id="SecureCookiesMiddleware-129"><a href="#SecureCookiesMiddleware-129"><span class="linenos">129</span></a>            <span class="c1"># passed between ASGI applications / middlewares.</span>
+</span><span id="SecureCookiesMiddleware-129"><a href="#SecureCookiesMiddleware-129"><span class="linenos">129</span></a>            <span class="c1"># passed between ASGI applications / middleware.</span>
 </span><span id="SecureCookiesMiddleware-130"><a href="#SecureCookiesMiddleware-130"><span class="linenos">130</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">set_header</span><span class="p">(</span>
 </span><span id="SecureCookiesMiddleware-131"><a href="#SecureCookiesMiddleware-131"><span class="linenos">131</span></a>                <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;cookie&quot;</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 </span><span id="SecureCookiesMiddleware-132"><a href="#SecureCookiesMiddleware-132"><span class="linenos">132</span></a>            <span class="p">)</span>
@@ -1672,7 +1755,7 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
 
           <ul>
             <li>
-              128-bit key AES in CBC mode using PKCS7 padding for encryption
+              128-bit key AES in CBC mode using PKCS7 padding for encryption.
             </li>
             <li>HMAC using SHA256 for authentication.</li>
           </ul>
@@ -2166,7 +2249,7 @@ $<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span
 </span><span id="SecureCookiesMiddleware.dispatch-126"><a href="#SecureCookiesMiddleware.dispatch-126"><span class="linenos">126</span></a>
 </span><span id="SecureCookiesMiddleware.dispatch-127"><a href="#SecureCookiesMiddleware.dispatch-127"><span class="linenos">127</span></a>            <span class="c1"># serialize and set the decrypted cookies to the asgi scope headers</span>
 </span><span id="SecureCookiesMiddleware.dispatch-128"><a href="#SecureCookiesMiddleware.dispatch-128"><span class="linenos">128</span></a>            <span class="c1"># we have to modify the scope directly because request objects are not</span>
-</span><span id="SecureCookiesMiddleware.dispatch-129"><a href="#SecureCookiesMiddleware.dispatch-129"><span class="linenos">129</span></a>            <span class="c1"># passed between ASGI applications / middlewares.</span>
+</span><span id="SecureCookiesMiddleware.dispatch-129"><a href="#SecureCookiesMiddleware.dispatch-129"><span class="linenos">129</span></a>            <span class="c1"># passed between ASGI applications / middleware.</span>
 </span><span id="SecureCookiesMiddleware.dispatch-130"><a href="#SecureCookiesMiddleware.dispatch-130"><span class="linenos">130</span></a>            <span class="bp">self</span><span class="o">.</span><span class="n">set_header</span><span class="p">(</span>
 </span><span id="SecureCookiesMiddleware.dispatch-131"><a href="#SecureCookiesMiddleware.dispatch-131"><span class="linenos">131</span></a>                <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;cookie&quot;</span><span class="p">,</span> <span class="n">cookies</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 </span><span id="SecureCookiesMiddleware.dispatch-132"><a href="#SecureCookiesMiddleware.dispatch-132"><span class="linenos">132</span></a>            <span class="p">)</span>
