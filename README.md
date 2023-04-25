@@ -13,10 +13,11 @@ Tested support on Python 3.7, 3.8, 3.9, and 3.10, 3.11 on macOS, Windows, and Li
 
 ```mermaid
 sequenceDiagram
-    Browser->>+Middleware: Encrypted cookies
-    Middleware->>+Application: Filtered / Decrypted cookies
+    Browser->>+Middleware: Encrypted 'Cookie' header
+    Middleware->>+Application: Decrypted cookies
     Application->>-Middleware: Plaintext cookies
-    Middleware->>-Browser: Encrypted 'Set-Cookie' headers
+    Middleware->>-Browser: Encrypted 'Set-Cookie' header
+    Note over Application: *The Application may be your service<br />or any additional middleware.
 ```
 
 For any incoming cookies:
@@ -30,9 +31,10 @@ For any incoming cookies:
 For any outgoing cookies:
 
 7. Your application sets cookies with `response.set_cookie` as usual.
-8. All responses returned by your application are intercepted by `SecureCookiesMiddleware`.
-9. Cookies in the `included_cookies` and `excluded_cookies` parameters are re-encrypted, and their attributes (like `"SameSite"` and `"HttpOnly"`) are overridden by the parameters set in `SecureCookiesMiddleware`.
-10. The cookies in the response are replaced by the re-encrypted cookies, and the response is propagated to Starlette to return to the client's browser.
+8. Other middleware run and add additional cookies, like [SessionMiddleware](https://www.starlette.io/middleware/#sessionmiddleware).
+9. All responses returned by your application are intercepted by `SecureCookiesMiddleware`.
+10. Cookies in the `included_cookies` and `excluded_cookies` parameters are re-encrypted, and their attributes (like `"SameSite"` and `"HttpOnly"`) are overridden by the parameters set in `SecureCookiesMiddleware` if set.
+11. The cookies in the response are replaced by the re-encrypted cookies, and the response is eventually propagated to the client's browser.
 
 ## Installation
 
@@ -44,7 +46,7 @@ $ python -m pip install --user starlette-securecookies
 
 ## Usage
 
-This is a Starlette-based middleware, so it can be used in any Starlette application or Starlette-based application (like [FastAPI](https://fastapi.tiangolo.com/advanced/middleware/) or [Starlite](https://starlite-api.github.io/starlite/usage/7-middleware/)).
+This is a Starlette-based middleware, so it can be used in any Starlette application or Starlette-based framework (like [FastAPI](https://fastapi.tiangolo.com/advanced/middleware/)).
 
 For example,
 
@@ -57,14 +59,20 @@ from securecookies import SecureCookiesMiddleware
 middleware = [
     Middleware(
         SecureCookiesMiddleware, secrets=["SUPER SECRET SECRET"],
-        # your other middlewares
+        # your other middleware
     )
 ]
 
 app = Starlette(routes=..., middleware=middleware)
 ```
 
-Note that if you're using another middleware that injects cookies into the response (such as SessionMiddleware), you have to make sure `SecureCookiesMiddleware` executes _after_ it so the cookie is present at encryption-time. Counter intuitively, in practice this means ensuring `SecureCookiesMiddleware` is _first_ in the list of middlewares.
+Note that if you're using another middleware that injects cookies into the response (such as [SessionMiddleware](https://www.starlette.io/middleware/#sessionmiddleware)), you have to make sure `SecureCookiesMiddleware` executes _after_ it so the cookie is present at encryption-time. Counter intuitively, in practice this means ensuring `SecureCookiesMiddleware` is _first_ in the list of middleware.
+
+### Extras
+
+`starlette-securecookies` provides some extras that introduce or patch secure cookie functionality into existing tools. They all reside in the `securecookies.extras` module. Currently there is only one, but more are welcome by recommendation or Pull Request!
+
+- **`csrf.SecureCSRFMiddleware`**: Adds compatibility to the CSRF middleware provided by [starlette_csrf](https://github.com/frankie567/starlette-csrf). To use it, simply add it to your list of middleware (keep in mind the ordering). If you don't want to specify `starlette_csrf` as a direct dependency, you can also install it through the `[csrf]` package extra.
 
 ## License
 

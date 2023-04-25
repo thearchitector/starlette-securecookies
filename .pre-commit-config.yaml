@@ -1,7 +1,7 @@
 repos:
   # python
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.259
+    rev: v0.0.262
     hooks:
       - id: ruff
         args: ["--fix", "--exit-non-zero-on-fix"]
@@ -11,13 +11,14 @@ repos:
       - id: black
         language_version: python3.7
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.1.1
+    rev: v1.2.0
     hooks:
       - id: mypy
         exclude: ^tests
         require_serial: true
         args: ["--explicit-package-bases", "--check-untyped-defs"]
-        additional_dependencies: ["starlette>=0.6.1", "cryptography>=0"]
+        additional_dependencies:
+          ["starlette>=0.6.1", "cryptography>=2.2", "starlette-csrf>=1.4.2"]
 
   # docs
   - repo: https://github.com/pre-commit/mirrors-prettier
