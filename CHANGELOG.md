@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2023-04-25
+
+## Added
+
+- Exposed encryption, decryption, and utility functions to better support subclass customization.
+- `SecureCSRFMiddleware` to the new `securecookies.extras` module to patch new and existing tooling to support secure cookies.
+
+## Changed
+
+- Better diagram support in documentation.
+- Replaced Poetry with PDM for dependency and package management.
+
 ## [1.0.2] - 2022-05-18
 
 ### Fixed
