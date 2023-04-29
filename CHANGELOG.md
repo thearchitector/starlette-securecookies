@@ -5,12 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0] - 2023-04-25
 
-## Added
+### Added
 
 - Exposed encryption, decryption, and utility functions to better support subclass customization.
 - `SecureCSRFMiddleware` to the new `securecookies.extras` module to patch new and existing tooling to support secure cookies.
 
-## Changed
+### Changed
 
 - Better diagram support in documentation.
 - Replaced Poetry with PDM for dependency and package management.
