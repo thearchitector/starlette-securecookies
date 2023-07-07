@@ -108,18 +108,21 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         """Encrypt the given value using the first configured secret."""
         return self.mfernet.encrypt(value.encode()).decode()
 
+    def should_process_cookie(self, cookie: str) -> bool:
+        """If the cookie should be included or not"""
+        return (
+            (not self.included_cookies and not self.excluded_cookies)
+            or (self.included_cookies and cookie in self.included_cookies)
+            or (self.excluded_cookies and cookie not in self.excluded_cookies)
+        )
+
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         if len(request.cookies):
             cookies: SimpleCookie[Any] = SimpleCookie()
             for cookie, value in request.cookies.items():
-                # if the cookie is included or not excluded
-                if (
-                    (not self.included_cookies and not self.excluded_cookies)
-                    or (self.included_cookies and cookie in self.included_cookies)
-                    or (self.excluded_cookies and cookie not in self.excluded_cookies)
-                ):
+                if self.should_process_cookie(cookie):
                     try:
                         # try to decrypt the cookie and pass it along
                         cookies[cookie] = self.decrypt(value)
@@ -145,12 +148,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         for cookie_header in cookie_headers:
             ncookie: SimpleCookie[Any] = SimpleCookie(cookie_header)
             key = [*ncookie.keys()][0]
-            # if the cookie is included or not excluded
-            if (
-                (not self.included_cookies and not self.excluded_cookies)
-                or (self.included_cookies and key in self.included_cookies)
-                or (self.excluded_cookies and key not in self.excluded_cookies)
-            ):
+            if self.should_process_cookie(key):
                 ncookie[key].set(key, *ncookie.value_encode(self.encrypt(ncookie[key].value)))
 
                 # Mutate the cookie based on middleware defaults (if provided)
