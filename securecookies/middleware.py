@@ -108,36 +108,6 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         """Encrypt the given value using the first configured secret."""
         return self.mfernet.encrypt(value.encode()).decode()
 
-    def update_cookies(self, cookie_value: str) -> str:
-        """Mutate a cookie string to encrypt values as required."""
-        ncookie: SimpleCookie[Any] = SimpleCookie(cookie_value)
-        key = [*ncookie.keys()][0]
-        # if the cookie is included or not excluded
-        if (
-            (not self.included_cookies and not self.excluded_cookies)
-            or (self.included_cookies and key in self.included_cookies)
-            or (self.excluded_cookies and key not in self.excluded_cookies)
-        ):
-            ncookie[key].set(key, *ncookie.value_encode(self.encrypt(ncookie[key].value)))
-
-            # Mutate the cookie based on middleware defaults (if provided)
-            if self.cookie_path is not None:
-                ncookie[key]["path"] = self.cookie_path
-
-            if self.cookie_domain is not None:
-                ncookie[key]["domain"] = self.cookie_domain
-
-            if self.cookie_secure is not None:
-                ncookie[key]["secure"] = self.cookie_secure
-
-            if self.cookie_httponly is not None:
-                ncookie[key]["httponly"] = self.cookie_httponly
-
-            if self.cookie_samesite is not None:
-                ncookie[key]["samesite"] = self.cookie_samesite
-
-        return ncookie.output(header="", sep=";").strip()
-
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
@@ -173,6 +143,32 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         del response.headers["set-cookie"]
 
         for cookie_header in cookie_headers:
-            response.headers.append("set-cookie", self.update_cookies(cookie_header))
+            ncookie: SimpleCookie[Any] = SimpleCookie(cookie_header)
+            key = [*ncookie.keys()][0]
+            # if the cookie is included or not excluded
+            if (
+                (not self.included_cookies and not self.excluded_cookies)
+                or (self.included_cookies and key in self.included_cookies)
+                or (self.excluded_cookies and key not in self.excluded_cookies)
+            ):
+                ncookie[key].set(key, *ncookie.value_encode(self.encrypt(ncookie[key].value)))
+
+                # Mutate the cookie based on middleware defaults (if provided)
+                if self.cookie_path is not None:
+                    ncookie[key]["path"] = self.cookie_path
+
+                if self.cookie_domain is not None:
+                    ncookie[key]["domain"] = self.cookie_domain
+
+                if self.cookie_secure is not None:
+                    ncookie[key]["secure"] = self.cookie_secure
+
+                if self.cookie_httponly is not None:
+                    ncookie[key]["httponly"] = self.cookie_httponly
+
+                if self.cookie_samesite is not None:
+                    ncookie[key]["samesite"] = self.cookie_samesite
+
+            response.headers.append("set-cookie", ncookie.output(header="", sep=";").strip())
 
         return response
