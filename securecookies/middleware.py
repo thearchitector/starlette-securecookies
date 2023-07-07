@@ -139,7 +139,7 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         response: Response = await call_next(request)
 
         # Extract the cookie header to be mutated later
-        cookie_headers = response.headers.getlist("set-cookie").copy()
+        cookie_headers = response.headers.getlist("set-cookie")
         del response.headers["set-cookie"]
 
         for cookie_header in cookie_headers:
