@@ -17,6 +17,10 @@ def test_bad_samesite(client_factory):
         client = client_factory(cookie_samesite="invalid")
         client.get("/get")
 
+    with pytest.warns(UserWarning, match="Insecure"):
+        client = client_factory(cookie_secure=False, cookie_samesite="None")
+        client.get("/get")
+
 
 def test_outgoing(client_factory, fernet):
     # api write ginger-molasses, client needs to decrypt

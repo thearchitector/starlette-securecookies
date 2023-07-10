@@ -1,6 +1,7 @@
 import sys
+import warnings
 from http.cookies import SimpleCookie
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -84,10 +85,19 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
                 " which cookies should be secure."
             )
 
-        if cookie_samesite and cookie_samesite.lower() not in ["strict", "lax", "none"]:
-            raise BadArgumentError(
-                "SameSite attribute must be either 'strict', 'lax' or 'none'"
-            )
+        if cookie_samesite:
+            samesite = cookie_samesite.lower()
+
+            if samesite not in ["strict", "lax", "none"]:
+                raise BadArgumentError(
+                    "SameSite attribute must be either 'strict', 'lax' or 'none'"
+                )
+            elif samesite == "none" and not self.cookie_secure:
+                warnings.warn(
+                    "Insecure cookies with a SameSite='None' attribute may be rejected"
+                    " on newer browser versions (draft-ietf-httpbis-rfc6265bis). See"
+                    " https://caniuse.com/same-site-cookie-attribute for compat notes."
+                )
 
     def set_header(self, request: Request, header: str, value: str) -> None:
         """
@@ -109,18 +119,21 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         return self.mfernet.encrypt(value.encode()).decode()
 
     def should_process_cookie(self, cookie: str) -> bool:
-        """If the cookie should be included or not"""
+        """Determines if the cookie should be included for processing."""
         return (
             (not self.included_cookies and not self.excluded_cookies)
-            or (self.included_cookies and cookie in self.included_cookies)
-            or (self.excluded_cookies and cookie not in self.excluded_cookies)
+            or (self.included_cookies is not None and cookie in self.included_cookies)
+            or (
+                self.excluded_cookies is not None
+                and cookie not in self.excluded_cookies
+            )
         )
 
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         if len(request.cookies):
-            cookies: SimpleCookie[Any] = SimpleCookie()
+            cookies: SimpleCookie[str] = SimpleCookie()
             for cookie, value in request.cookies.items():
                 if self.should_process_cookie(cookie):
                     try:
@@ -141,15 +154,16 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         # propagate the modified request
         response: Response = await call_next(request)
 
-        # Extract the cookie header to be mutated later
+        # Extract the cookie headers to be mutated
         cookie_headers = response.headers.getlist("set-cookie")
         del response.headers["set-cookie"]
 
         for cookie_header in cookie_headers:
-            ncookie: SimpleCookie[Any] = SimpleCookie(cookie_header)
-            key = [*ncookie.keys()][0]
+            ncookie: SimpleCookie[str] = SimpleCookie(cookie_header)
+            key = next(iter(ncookie.keys()))
+
             if self.should_process_cookie(key):
-                ncookie[key].set(key, *ncookie.value_encode(self.encrypt(ncookie[key].value)))
+                ncookie[key] = self.encrypt(ncookie[key].value)
 
                 # Mutate the cookie based on middleware defaults (if provided)
                 if self.cookie_path is not None:
@@ -167,6 +181,8 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
                 if self.cookie_samesite is not None:
                     ncookie[key]["samesite"] = self.cookie_samesite
 
-            response.headers.append("set-cookie", ncookie.output(header="", sep=";").strip())
+            response.headers.append(
+                "set-cookie", ncookie.output(header="", sep=";").strip()
+            )
 
         return response
