@@ -13,27 +13,27 @@ Tested support on Python 3.7, 3.8, 3.9, and 3.10, 3.11 on macOS, Windows, and Li
 
 ```mermaid
 sequenceDiagram
-    Browser->>+Middleware: Encrypted 'Cookie' header
+    Browser->>+Middleware: Encrypted 'Cookie' headers
     Middleware->>+Application: Decrypted cookies
     Application->>-Middleware: Plaintext cookies
-    Middleware->>-Browser: Encrypted 'Set-Cookie' header
+    Middleware->>-Browser: Encrypted 'Set-Cookie' headers
     Note over Application: *The Application may be your service<br />or any additional middleware.
 ```
 
 For any incoming cookies:
 
 1. Requests sent from the client's browser to your application are intercepted by `SecureCookiesMiddleware`.
-2. All `Cookie` headers are parsed and filter. Only cookies in the `included_cookies` and `excluded_cookies` parameters are parsed. All cookies are included by default.
-3. The cookies are decrypted. If cookie cannot be decrypted, or is otherwise invalid, it is discarded by default (`discard_invalid=True`).
+2. All `Cookie` headers are filtered and parsed. Only cookies in the `included_cookies` and `excluded_cookies` parameters are parsed. All cookies are included by default.
+3. The cookies are decrypted. If a cookie cannot be decrypted, or is otherwise invalid, it is discarded by default (`discard_invalid=True`).
 4. Any included and valid encrypted cookies in the ASGI request scope are replaced by the decrypted ones.
 5. The request scope is passed to any future middleware, and eventually your application. Cookies can be read normally anywhere downstream.
 
 For any outgoing cookies:
 
-7. Your application sets cookies with `response.set_cookie` as usual.
+7. Your application sets cookies with `response.set_cookie`, or by any other means of creating `Set-Cookie` headers.
 8. Other middleware run and add additional cookies, like [SessionMiddleware](https://www.starlette.io/middleware/#sessionmiddleware).
 9. All responses returned by your application are intercepted by `SecureCookiesMiddleware`.
-10. Cookies in the `included_cookies` and `excluded_cookies` parameters are re-encrypted, and their attributes (like `"SameSite"` and `"HttpOnly"`) are overridden by the parameters set in `SecureCookiesMiddleware` if set.
+10. Cookies in the `included_cookies` and not in the `excluded_cookies` parameters are re-encrypted, and their attributes (like `"SameSite"` and `"HttpOnly"`) are overridden by any parameters set in `SecureCookiesMiddleware`.
 11. The cookies in the response are replaced by the re-encrypted cookies, and the response is eventually propagated to the client's browser.
 
 ## Installation

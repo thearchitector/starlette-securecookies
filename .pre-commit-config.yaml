@@ -1,17 +1,17 @@
 repos:
   # python
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.262
+    rev: v0.0.277
     hooks:
       - id: ruff
         args: ["--fix", "--exit-non-zero-on-fix"]
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 23.3.0
     hooks:
       - id: black
         language_version: python3.7
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.2.0
+    rev: v1.4.1
     hooks:
       - id: mypy
         exclude: ^tests
@@ -21,11 +21,11 @@ repos:
           ["starlette>=0.6.1", "cryptography>=2.2", "starlette-csrf>=1.4.2"]
 
   # docs
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.7.1
-    hooks:
-      - id: prettier
-        files: ^docs
+  # - repo: https://github.com/pre-commit/mirrors-prettier
+  #   rev: v2.7.1
+  #   hooks:
+  #     - id: prettier
+  #       files: ^docs
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
