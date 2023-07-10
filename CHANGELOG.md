@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Existing `Set-Cookie` headers are removed from the response and replaced by their encrypted counterparts (@RealOrangeOne in #6).
+- Existing `Set-Cookie` headers are removed from the response and replaced by their encrypted counterparts ([@RealOrangeOne](https://github.com/RealOrangeOne) in [#6](https://github.com/thearchitector/starlette-securecookies/pull/6)).
 - A ghost bug (one that didn't affect anything due to downstream behavior).
 
 ## [1.1.0] - 2023-04-25
