@@ -17,12 +17,17 @@ def test_bad_samesite(client_factory):
         client = client_factory(cookie_samesite="invalid")
         client.get("/get")
 
+    with pytest.warns(UserWarning, match="Insecure"):
+        client = client_factory(cookie_secure=False, cookie_samesite="None")
+        client.get("/get")
+
 
 def test_outgoing(client_factory, fernet):
     # api write ginger-molasses, client needs to decrypt
     response = client_factory().get("/get")
     assert response.status_code == 200
 
+    assert len(response.headers.get_list("set-cookie")) == 1
     cookie = response.cookies["type"]
     assert fernet.decrypt(cookie.encode()).decode() == "ginger-molasses"
     assert not next(iter(response.cookies.jar)).secure
@@ -45,6 +50,7 @@ def test_outgoing_included(client_factory, fernet):
     response = client.get("/getm")
 
     assert response.status_code == 200
+    assert len(response.headers.get_list("set-cookie")) == 2
     assert (
         fernet.decrypt(response.cookies["type"].encode()).decode() == "ginger-molasses"
     )
@@ -57,6 +63,7 @@ def test_outgoing_excluded(client_factory, fernet):
     response = client.get("/getm")
     assert response.status_code == 200
 
+    assert len(response.headers.get_list("set-cookie")) == 2
     cookie = response.cookies["anothertype"]
     assert fernet.decrypt(cookie.encode()).decode() == "chocolate-chip"
     assert response.cookies["type"] == "ginger-molasses"

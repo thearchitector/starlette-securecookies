@@ -1,6 +1,7 @@
 import sys
+import warnings
 from http.cookies import SimpleCookie
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from cryptography.fernet import Fernet, InvalidToken, MultiFernet
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -84,10 +85,19 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
                 " which cookies should be secure."
             )
 
-        if cookie_samesite and cookie_samesite.lower() not in ["strict", "lax", "none"]:
-            raise BadArgumentError(
-                "SameSite attribute must be either 'strict', 'lax' or 'none'"
-            )
+        if cookie_samesite:
+            samesite = cookie_samesite.lower()
+
+            if samesite not in ["strict", "lax", "none"]:
+                raise BadArgumentError(
+                    "SameSite attribute must be either 'strict', 'lax' or 'none'"
+                )
+            elif samesite == "none" and not self.cookie_secure:
+                warnings.warn(
+                    "Insecure cookies with a SameSite='None' attribute may be rejected"
+                    " on newer browser versions (draft-ietf-httpbis-rfc6265bis). See"
+                    " https://caniuse.com/same-site-cookie-attribute for compat notes."
+                )
 
     def set_header(self, request: Request, header: str, value: str) -> None:
         """
@@ -108,18 +118,24 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         """Encrypt the given value using the first configured secret."""
         return self.mfernet.encrypt(value.encode()).decode()
 
+    def should_process_cookie(self, cookie: str) -> bool:
+        """Determines if the cookie should be included for processing."""
+        return (
+            (not self.included_cookies and not self.excluded_cookies)
+            or (self.included_cookies is not None and cookie in self.included_cookies)
+            or (
+                self.excluded_cookies is not None
+                and cookie not in self.excluded_cookies
+            )
+        )
+
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         if len(request.cookies):
-            cookies: SimpleCookie[Any] = SimpleCookie()
+            cookies: SimpleCookie[str] = SimpleCookie()
             for cookie, value in request.cookies.items():
-                # if the cookie is included or not excluded
-                if (
-                    (not self.included_cookies and not self.excluded_cookies)
-                    or (self.included_cookies and cookie in self.included_cookies)
-                    or (self.excluded_cookies and cookie not in self.excluded_cookies)
-                ):
+                if self.should_process_cookie(cookie):
                     try:
                         # try to decrypt the cookie and pass it along
                         cookies[cookie] = self.decrypt(value)
@@ -138,27 +154,35 @@ class SecureCookiesMiddleware(BaseHTTPMiddleware):
         # propagate the modified request
         response: Response = await call_next(request)
 
-        # for every cookie in the response
-        for cookie in response.headers.getlist("set-cookie"):
-            # decode it
-            ncookie: SimpleCookie[Any] = SimpleCookie(cookie)
-            key = [*ncookie.keys()][0]
+        # Extract the cookie headers to be mutated
+        cookie_headers = response.headers.getlist("set-cookie")
+        del response.headers["set-cookie"]
 
-            # if the cookie is included or not excluded
-            if (
-                (not self.included_cookies and not self.excluded_cookies)
-                or (self.included_cookies and key in self.included_cookies)
-                or (self.excluded_cookies and key not in self.excluded_cookies)
-            ):
-                # create a new encrypted cookie with the desired attributes
-                response.set_cookie(
-                    key,
-                    value=self.encrypt(ncookie[key].value),
-                    path=self.cookie_path or ncookie[key]["path"],
-                    domain=self.cookie_domain or ncookie[key]["domain"],
-                    secure=self.cookie_secure or ncookie[key]["secure"],
-                    httponly=self.cookie_httponly or ncookie[key]["httponly"],
-                    samesite=self.cookie_samesite or ncookie[key]["samesite"],
-                )
+        for cookie_header in cookie_headers:
+            ncookie: SimpleCookie[str] = SimpleCookie(cookie_header)
+            key = next(iter(ncookie.keys()))
+
+            if self.should_process_cookie(key):
+                ncookie[key] = self.encrypt(ncookie[key].value)
+
+                # Mutate the cookie based on middleware defaults (if provided)
+                if self.cookie_path is not None:
+                    ncookie[key]["path"] = self.cookie_path
+
+                if self.cookie_domain is not None:
+                    ncookie[key]["domain"] = self.cookie_domain
+
+                if self.cookie_secure is not None:
+                    ncookie[key]["secure"] = self.cookie_secure
+
+                if self.cookie_httponly is not None:
+                    ncookie[key]["httponly"] = self.cookie_httponly
+
+                if self.cookie_samesite is not None:
+                    ncookie[key]["samesite"] = self.cookie_samesite
+
+            response.headers.append(
+                "set-cookie", ncookie.output(header="", sep=";").strip()
+            )
 
         return response
